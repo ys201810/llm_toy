@@ -11,14 +11,7 @@ config_file = base_path / 'config' / 'config.yaml'
 config = get_config.run(config_file)
 
 prompt_template = """
-# introduction
-- You are a helpful assistant that provides advice on making a resume more attractive.
-- The user is trying to create a resume, and your goal is to make the user's resume attractive.
-- Please output the best results based on the following constrains
-
-# Constrains
-- Translate the following work experience into a more attractive and engaging description.
-- If you cannot provide the best information, let me know.
+- Make the following statement more attractive for company reviewer.
 
 Human: {input}
 Assistant:
@@ -32,12 +25,24 @@ def main():
         st.session_state.conversation_history = []
 
     input_text = st.text_input("Enter your message:")
+    deepl = DeepL(config.deepl_api_key, config.deepl_url)
+    chatgpt = ChatGPT(config.openai_api_key, config.openai_model)
+
     if st.button("Send"):
         # Add user's message to conversation history
         st.session_state.conversation_history.append({"sender": "User", "message": input_text})
 
+        normal_prompt = f"""
+        以下の文章を魅力的にしてください。
+
+        {input_text}
+        """.format(input_text)
+        normal_response = chatgpt.run_chat(normal_prompt)
+
+        # Add AI's response to conversation history
+        st.session_state.conversation_history.append({"sender": "AI(No DEEPL)", "message": normal_response})
+
         # 入力された日本語を英語に翻訳
-        deepl = DeepL(config.deepl_api_key, config.deepl_url)
         translate_result = deepl.run_translate(
             text=input_text,
             from_lang='JA',
@@ -45,7 +50,6 @@ def main():
         )
 
         # 翻訳された英語のテキストをchatGPTに投入
-        chatgpt = ChatGPT(config.openai_api_key, config.openai_model)
         prompt = prompt_template.format(**{'input': translate_result})
         gpt_response = chatgpt.run_chat(prompt)
 
@@ -57,10 +61,10 @@ def main():
         )
 
         # Add AI's response to conversation history
-        st.session_state.conversation_history.append({"sender": "AI", "message": translate_result})
+        st.session_state.conversation_history.append({"sender": "AI(with DEEPL)", "message": translate_result})
 
         # Keep only the last 10 messages
-        st.session_state.conversation_history = st.session_state.conversation_history[-10:]
+        st.session_state.conversation_history = st.session_state.conversation_history[-12:]
 
     # Display conversation history
     st.write("Conversation history:")
