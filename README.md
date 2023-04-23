@@ -6,7 +6,7 @@ demo: 上記のデモ
 utils: 汎用クラス
 
 #### 使い方
-config/config.yamlを作成し、以下のようなファイルを格納。
+llm_toy/config/config.yamlを作成し、以下のようなファイルを格納。
 
 ```
 openai:
